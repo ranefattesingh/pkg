@@ -10,10 +10,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type AppConfig struct {
+type AppConfigSnakeCase struct {
 	LogLevel       string         `yaml:"log_level" mapstructure:"log_level" default:"info"`
-	ServerConfig   HTTPConfig     `yaml:"http" mapstructure:"http"`
-	DatabaseConfig DatabaseConfig `yaml:"db" mapstructure:"db"`
+	ServerConfig   HTTPConfig     `yaml:"server_config" mapstructure:"server_config"`
+	DatabaseConfig DatabaseConfig `yaml:"db_config" mapstructure:"db_config"`
+}
+
+type AppConfigCamelCase struct {
+	LogLevel       string         `yaml:"logLevel" mapstructure:"logLevel" default:"info"`
+	ServerConfig   HTTPConfig     `yaml:"serverConfig" mapstructure:"serverConfig"`
+	DatabaseConfig DatabaseConfig `yaml:"dbConfig" mapstructure:"dbConfig"`
 }
 
 type HTTPConfig struct {
@@ -49,158 +55,280 @@ func TestLoad(t *testing.T) {
 func testLoadFromFileWithConfigNameAndType(t *testing.T) {
 	t.Helper()
 
-	expectedConfig := AppConfig{
-		LogLevel: "warn",
-		ServerConfig: HTTPConfig{
-			Host: "localhost",
-			Port: 8000,
+	testTable := map[string]interface{}{
+		"should load config defined in snake case": AppConfigSnakeCase{
+			LogLevel: "warn",
+			ServerConfig: HTTPConfig{
+				Host: "localhost",
+				Port: 8000,
+			},
+			DatabaseConfig: DatabaseConfig{
+				User:     "test",
+				Password: "password",
+				Host:     "localhost",
+				Port:     3000,
+			},
 		},
-		DatabaseConfig: DatabaseConfig{
-			User:     "test",
-			Password: "password",
-			Host:     "localhost",
-			Port:     3000,
+		"should load config defined in camel case": AppConfigCamelCase{
+			LogLevel: "warn",
+			ServerConfig: HTTPConfig{
+				Host: "localhost",
+				Port: 8000,
+			},
+			DatabaseConfig: DatabaseConfig{
+				User:     "test",
+				Password: "password",
+				Host:     "localhost",
+				Port:     3000,
+			},
 		},
 	}
 
-	file, err := createTestFile(expectedConfig, "", "config*.yaml")
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+	for scenario, testdata := range testTable {
+		file, err := createTestFile(testdata, "", "config*.yaml")
+		if err != nil {
+			errorF(t, t.Name(), "err", nil, err)
 
-		return
-	}
+			return
+		}
 
-	actualConfig := AppConfig{}
-	pathIndex := strings.LastIndex(file.Name(), "/")
-	extensionIndex := strings.LastIndex(file.Name(), ".")
-	fullName := file.Name()
-	configName := fullName[pathIndex+1 : extensionIndex]
-	configPath := fullName[:pathIndex]
-	configType := fullName[extensionIndex+1:]
+		defer os.Remove(file.Name())
 
-	loader := config.NewConfigLoaderBuilder().
-		WithName(configName).
-		WithFilePath(configPath).
-		WithFileType(configType).
-		Build()
+		pathIndex := strings.LastIndex(file.Name(), "/")
+		extensionIndex := strings.LastIndex(file.Name(), ".")
+		fullName := file.Name()
+		configName := fullName[pathIndex+1 : extensionIndex]
+		configPath := fullName[:pathIndex]
+		configType := fullName[extensionIndex+1:]
 
-	err = loader.Load(&actualConfig)
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+		loader := config.NewConfigLoaderBuilder().
+			WithName(configName).
+			WithFilePath(configPath).
+			WithFileType(configType).
+			Build()
 
-		return
-	}
+		var result interface{}
 
-	defer os.Remove(file.Name())
+		if strings.Contains(scenario, "snake") {
+			actualConfig := AppConfigSnakeCase{}
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name(), "err", nil, err)
 
-	isEqual := reflect.DeepEqual(expectedConfig, actualConfig)
-	if !isEqual {
-		errorF(t, t.Name(), "config", expectedConfig, actualConfig)
+				return
+			}
+
+			result = actualConfig
+		} else {
+			actualConfig := AppConfigCamelCase{}
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name(), "err", nil, err)
+
+				return
+			}
+
+			result = actualConfig
+
+		}
+
+		isEqual := reflect.DeepEqual(testdata, result)
+		if !isEqual {
+			errorF(t, t.Name()+"/"+scenario, "config", testdata, result)
+		}
 	}
 }
 
 func testLoadFromFileWithConfigFile(t *testing.T) {
 	t.Helper()
 
-	expectedConfig := AppConfig{
-		LogLevel: "warn",
-		ServerConfig: HTTPConfig{
-			Host: "localhost",
-			Port: 8000,
+	testTable := map[string]interface{}{
+		"should load config defined in snake case": AppConfigSnakeCase{
+			LogLevel: "warn",
+			ServerConfig: HTTPConfig{
+				Host: "localhost",
+				Port: 8000,
+			},
+			DatabaseConfig: DatabaseConfig{
+				User:     "test",
+				Password: "password",
+				Host:     "localhost",
+				Port:     3000,
+			},
 		},
-		DatabaseConfig: DatabaseConfig{
-			User:     "test",
-			Password: "password",
-			Host:     "localhost",
-			Port:     3000,
+		"should load config defined in camel case": AppConfigCamelCase{
+			LogLevel: "warn",
+			ServerConfig: HTTPConfig{
+				Host: "localhost",
+				Port: 8000,
+			},
+			DatabaseConfig: DatabaseConfig{
+				User:     "test",
+				Password: "password",
+				Host:     "localhost",
+				Port:     3000,
+			},
 		},
 	}
 
-	file, err := createTestFile(expectedConfig, "", "config*.yaml")
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+	for scenario, testdata := range testTable {
+		file, err := createTestFile(testdata, "", "config*.yaml")
+		if err != nil {
+			errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
-		return
-	}
+			return
+		}
 
-	actualConfig := AppConfig{}
+		loader := config.NewConfigLoaderBuilder().
+			WithFile(file.Name()).
+			Build()
 
-	loader := config.NewConfigLoaderBuilder().
-		WithFile(file.Name()).
-		Build()
+		var result interface{}
 
-	err = loader.Load(&actualConfig)
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+		if strings.Contains(scenario, "snake") {
+			actualConfig := AppConfigSnakeCase{}
 
-		return
-	}
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
-	defer os.Remove(file.Name())
+				return
+			}
 
-	isEqual := reflect.DeepEqual(expectedConfig, actualConfig)
-	if !isEqual {
-		errorF(t, t.Name(), "config", expectedConfig, actualConfig)
+			result = actualConfig
+		} else {
+			actualConfig := AppConfigCamelCase{}
+
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
+
+				return
+			}
+
+			result = actualConfig
+
+		}
+
+		defer os.Remove(file.Name())
+
+		isEqual := reflect.DeepEqual(testdata, result)
+		if !isEqual {
+			errorF(t, t.Name()+"/"+scenario, "config", testdata, result)
+		}
 	}
 }
 
 func testLoadFromFileWithConfigFileAndDefaultsEnabled(t *testing.T) {
 	t.Helper()
 
-	expectedConfig := AppConfig{
-		LogLevel: "info",
-		ServerConfig: HTTPConfig{
-			Host: "0.0.0.0",
-			Port: 8080,
-		},
-		DatabaseConfig: DatabaseConfig{
-			User:     "test",
-			Password: "password",
-			Host:     "0.0.0.0",
-			Port:     5432,
-		},
-	}
-
 	type PartialDatabaseConfig struct {
-		User     string
-		Password string
+		User     string `yaml:"user" mapstructure:"user"`
+		Password string `yaml:"password" mapstructure:"password"`
 	}
 
-	partialAppConfig := struct {
-		DatabaseConfig PartialDatabaseConfig `yaml:"db"`
+	type PartialAppSnakeCaseConfig struct {
+		DatabaseConfig PartialDatabaseConfig `yaml:"db_config" mapstructure:"db_config"`
+	}
+
+	type PartialAppCamelCaseConfig struct {
+		DatabaseConfig PartialDatabaseConfig `yaml:"dbConfig" mapstructure:"dbConfig"`
+	}
+
+	testTable := map[string]struct {
+		expected interface{}
+		input    interface{}
 	}{
-		DatabaseConfig: PartialDatabaseConfig{
-			User:     "test",
-			Password: "password",
+		"should load config defined in snake case": {
+			expected: AppConfigSnakeCase{
+				LogLevel: "info",
+				ServerConfig: HTTPConfig{
+					Host: "0.0.0.0",
+					Port: 8080,
+				},
+				DatabaseConfig: DatabaseConfig{
+					User:     "test",
+					Password: "password",
+					Host:     "0.0.0.0",
+					Port:     5432,
+				},
+			},
+			input: PartialAppSnakeCaseConfig{
+				DatabaseConfig: PartialDatabaseConfig{
+					User:     "test",
+					Password: "password",
+				},
+			},
+		},
+		"should load config defined in camel case": {
+			expected: AppConfigCamelCase{
+				LogLevel: "info",
+				ServerConfig: HTTPConfig{
+					Host: "0.0.0.0",
+					Port: 8080,
+				},
+				DatabaseConfig: DatabaseConfig{
+					User:     "test",
+					Password: "password",
+					Host:     "0.0.0.0",
+					Port:     5432,
+				},
+			},
+			input: PartialAppCamelCaseConfig{
+				DatabaseConfig: PartialDatabaseConfig{
+					User:     "test",
+					Password: "password",
+				},
+			},
 		},
 	}
 
-	file, err := createTestFile(partialAppConfig, "", "config*.yaml")
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+	for scenario, testdata := range testTable {
+		file, err := createTestFile(testdata.input, "", "config*.yaml")
+		if err != nil {
+			errorF(t, t.Name(), "err", nil, err)
 
-		return
-	}
+			return
+		}
 
-	actualConfig := AppConfig{}
+		loader := config.NewConfigLoaderBuilder().
+			WithFile(file.Name()).
+			UseDefaults().
+			Build()
 
-	loader := config.NewConfigLoaderBuilder().
-		WithFile(file.Name()).
-		UseDefaults().
-		Build()
+		var result interface{}
 
-	err = loader.Load(&actualConfig)
-	if err != nil {
-		errorF(t, t.Name(), "err", nil, err)
+		if strings.Contains(scenario, "snake") {
+			actualConfig := AppConfigSnakeCase{}
 
-		return
-	}
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
-	defer os.Remove(file.Name())
+				return
+			}
 
-	isEqual := reflect.DeepEqual(expectedConfig, actualConfig)
-	if !isEqual {
-		errorF(t, t.Name(), "config", expectedConfig, actualConfig)
+			result = actualConfig
+		} else {
+			actualConfig := AppConfigCamelCase{}
+
+			err = loader.Load(&actualConfig)
+			if err != nil {
+				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
+
+				return
+			}
+
+			result = actualConfig
+
+		}
+
+		defer os.Remove(file.Name())
+
+		isEqual := reflect.DeepEqual(testdata.expected, result)
+		if !isEqual {
+			errorF(t, t.Name()+"/"+scenario, "config", testdata.expected, result)
+		}
 	}
 }
 
