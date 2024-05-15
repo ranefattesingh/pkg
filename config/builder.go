@@ -1,19 +1,23 @@
-package config
+package configloader
 
 import "github.com/spf13/viper"
 
 type configBuilder struct {
-	confName     string
-	confFile     string
-	confFilePath string
-	confFileType string
-	useEnv       bool
-	envPrefix    string
-	useDefaults  bool
+	confName            string
+	confFile            string
+	confFilePath        string
+	confFileType        string
+	useEnv              bool
+	envPrefix           string
+	useDefaults         bool
+	useSnakeCaseEnvVars bool
 }
 
 func NewConfigLoaderBuilder() *configBuilder {
-	return new(configBuilder)
+	cb := new(configBuilder)
+	cb.useSnakeCaseEnvVars = true
+
+	return cb
 }
 
 func (cb *configBuilder) WithName(name string) *configBuilder {
@@ -64,6 +68,12 @@ func (cb *configBuilder) UseDefaults() *configBuilder {
 	return cb
 }
 
+func (cb *configBuilder) DoNotUseSnakeCaseEnvironmentVariableNamingConvention() *configBuilder {
+	cb.useSnakeCaseEnvVars = false
+
+	return cb
+}
+
 func (cb *configBuilder) DoNotUseDefaults() *configBuilder {
 	cb.useDefaults = false
 
@@ -72,13 +82,14 @@ func (cb *configBuilder) DoNotUseDefaults() *configBuilder {
 
 func (cb *configBuilder) Build() *viperLoader {
 	return &viperLoader{
-		viper:        viper.New(),
-		confName:     cb.confName,
-		confFile:     cb.confFile,
-		confFilePath: cb.confFilePath,
-		confFileType: cb.confFileType,
-		useEnv:       cb.useEnv,
-		envPrefix:    cb.envPrefix,
-		useDefaults:  cb.useDefaults,
+		viper:               viper.New(),
+		confName:            cb.confName,
+		confFile:            cb.confFile,
+		confFilePath:        cb.confFilePath,
+		confFileType:        cb.confFileType,
+		useEnv:              cb.useEnv,
+		envPrefix:           cb.envPrefix,
+		useDefaults:         cb.useDefaults,
+		useSnakeCaseEnvVars: cb.useSnakeCaseEnvVars,
 	}
 }
