@@ -86,10 +86,14 @@ func (vl *viperLoader) Load(target any) (err error) {
 }
 
 func (vl *viperLoader) EnableLiveReload(ctx context.Context) {
+	defer close(vl.startWatching)
+  
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
+				close(vl.stopWatching)
+
 				return
 			case <-vl.stopWatching:
 				return
@@ -103,8 +107,6 @@ func (vl *viperLoader) EnableLiveReload(ctx context.Context) {
 			}
 		}
 	}()
-
-	close(vl.startWatching)
 }
 
 func (vl *viperLoader) StopLiveReload() {
