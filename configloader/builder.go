@@ -91,5 +91,7 @@ func (cb *configBuilder) Build() *viperLoader {
 		envPrefix:           cb.envPrefix,
 		useDefaults:         cb.useDefaults,
 		useSnakeCaseEnvVars: cb.useSnakeCaseEnvVars,
+		startWatching:       make(chan struct{}),
+		stopWatching:        make(chan struct{}),
 	}
 }

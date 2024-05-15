@@ -1,11 +1,13 @@
 package configloader
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"reflect"
 	"strings"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/joho/godotenv"
 	"github.com/mcuadros/go-defaults"
 	"github.com/mitchellh/mapstructure"
@@ -27,6 +29,9 @@ type viperLoader struct {
 	envPrefix           string
 	useDefaults         bool
 	useSnakeCaseEnvVars bool
+	stopWatching        chan struct{}
+	startWatching       chan struct{}
+	target              interface{}
 }
 
 type configDef struct {
@@ -75,7 +80,35 @@ func (vl *viperLoader) Load(target any) (err error) {
 		return err
 	}
 
+	vl.target = target
+
 	return nil
+}
+
+func (vl *viperLoader) EnableLiveReload(ctx context.Context) {
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-vl.stopWatching:
+				return
+
+			case <-vl.startWatching:
+				vl.viper.OnConfigChange(func(e fsnotify.Event) {
+					vl.Load(vl.target)
+				})
+
+				vl.viper.WatchConfig()
+			}
+		}
+	}()
+
+	close(vl.startWatching)
+}
+
+func (vl *viperLoader) StopLiveReload() {
+	vl.stopWatching <- struct{}{}
 }
 
 func (vl *viperLoader) loadFromFile() error {
