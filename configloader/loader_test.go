@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	configloader "github.com/ranefattesingh/pkg/config"
+	"github.com/ranefattesingh/pkg/configloader"
 	"gopkg.in/yaml.v3"
 )
 
