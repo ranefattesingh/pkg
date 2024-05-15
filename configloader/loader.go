@@ -87,7 +87,7 @@ func (vl *viperLoader) Load(target any) (err error) {
 
 func (vl *viperLoader) EnableLiveReload(ctx context.Context) {
 	defer close(vl.startWatching)
-
+  
 	go func() {
 		for {
 			select {
