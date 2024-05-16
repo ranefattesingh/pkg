@@ -11,6 +11,7 @@ type configBuilder struct {
 	envPrefix           string
 	useDefaults         bool
 	useSnakeCaseEnvVars bool
+	enableFallbacking   bool
 }
 
 func NewConfigLoaderBuilder() *configBuilder {
@@ -80,6 +81,12 @@ func (cb *configBuilder) DoNotUseDefaults() *configBuilder {
 	return cb
 }
 
+func (cb *configBuilder) EnableFallbacking() *configBuilder {
+	cb.enableFallbacking = true
+
+	return cb
+}
+
 func (cb *configBuilder) Build() *viperLoader {
 	return &viperLoader{
 		viper:               viper.New(),
@@ -91,7 +98,6 @@ func (cb *configBuilder) Build() *viperLoader {
 		envPrefix:           cb.envPrefix,
 		useDefaults:         cb.useDefaults,
 		useSnakeCaseEnvVars: cb.useSnakeCaseEnvVars,
-		startWatching:       make(chan struct{}),
-		stopWatching:        make(chan struct{}),
+		enableFallbacking:   cb.enableFallbacking,
 	}
 }
