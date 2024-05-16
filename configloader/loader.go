@@ -31,15 +31,26 @@ type viperLoader struct {
 	envPrefix           string
 	useDefaults         bool
 	useSnakeCaseEnvVars bool
-	stopWatching        chan struct{}
-	startWatching       chan struct{}
-	target              interface{}
+	enableFallbacking   bool
+}
+
+func NewDefaultLoader() *viperLoader {
+	return &viperLoader{
+		viper:               viper.New(),
+		confName:            "config",
+		confFilePath:        "../",
+		confFileType:        "yaml",
+		useEnv:              true,
+		useDefaults:         true,
+		useSnakeCaseEnvVars: true,
+		enableFallbacking:   true,
+	}
 }
 
 type configDef struct {
-	Key     string      `json:"key"`
-	Doc     string      `json:"doc"`
-	Default interface{} `json:"default"`
+	Key     string `json:"key"`
+	Doc     string `json:"doc"`
+	Default any    `json:"default"`
 }
 
 func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
@@ -52,6 +63,33 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 		defaults.SetDefaults(target)
 	}
 
+	if vl.enableFallbacking {
+		err = vl.loadWithFallbacking(ctx, rv, target)
+	} else {
+		err = vl.loadWithoutFallbacking(ctx, rv, target)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if err := vl.viper.Unmarshal(target, configDecoder); err != nil {
+		return err
+	}
+
+	vl.viper.WatchConfig()
+	vl.viper.OnConfigChange(func(event fsnotify.Event) {
+		if event.Op == fsnotify.Write {
+			if err := vl.viper.Unmarshal(&target); err != nil {
+				log.Println(err)
+			}
+		}
+	})
+
+	return nil
+}
+
+func (vl *viperLoader) loadWithoutFallbacking(ctx context.Context, rv reflect.Value, target any) (err error) {
 	useEnv := vl.useEnv
 
 	if strings.HasSuffix(vl.confFile, ".env") || vl.confFileType == "env" {
@@ -77,22 +115,29 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 		err = vl.loadFromFile()
 	}
 
+	return err
+}
+
+func (vl *viperLoader) loadWithFallbacking(ctx context.Context, rv reflect.Value, target any) (err error) {
+	err = vl.loadFromFile()
 	if err != nil {
-		return err
-	}
+		if strings.HasSuffix(vl.confFile, ".env") || vl.confFileType == "env" {
+			confFile := vl.confFile
+			if confFile == "" {
+				confFile = filepath.Join(vl.confFilePath, vl.confName+"."+vl.confFileType)
+			}
 
-	if err := vl.viper.Unmarshal(target, configDecoder); err != nil {
-		return err
-	}
-
-	vl.viper.WatchConfig()
-	vl.viper.OnConfigChange(func(event fsnotify.Event) {
-		if event.Op == fsnotify.Write {
-			if err := vl.viper.Unmarshal(&target); err != nil {
-				log.Println(err)
+			err := godotenv.Load(confFile)
+			if err != nil {
+				return err
 			}
 		}
-	})
+
+		err = vl.loadFromEnv(rv)
+		if err == nil {
+			go watchEnvVars(ctx, vl.viper, target)
+		}
+	}
 
 	return nil
 }
