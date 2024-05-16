@@ -3,9 +3,11 @@ package configloader
 import (
 	"context"
 	"errors"
+	"log"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/joho/godotenv"
@@ -40,7 +42,7 @@ type configDef struct {
 	Default interface{} `json:"default"`
 }
 
-func (vl *viperLoader) Load(target any) (err error) {
+func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 	rv := reflect.ValueOf(target)
 	if err = ensureStructPtr(rv); err != nil {
 		return err
@@ -68,6 +70,9 @@ func (vl *viperLoader) Load(target any) (err error) {
 
 	if useEnv {
 		err = vl.loadFromEnv(rv)
+		if err == nil {
+			go watchEnvVars(ctx, vl.viper, target)
+		}
 	} else {
 		err = vl.loadFromFile()
 	}
@@ -80,37 +85,16 @@ func (vl *viperLoader) Load(target any) (err error) {
 		return err
 	}
 
-	vl.target = target
-
-	return nil
-}
-
-func (vl *viperLoader) EnableLiveReload(ctx context.Context) {
-	defer close(vl.startWatching)
-  
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				close(vl.stopWatching)
-
-				return
-			case <-vl.stopWatching:
-				return
-
-			case <-vl.startWatching:
-				vl.viper.OnConfigChange(func(e fsnotify.Event) {
-					vl.Load(vl.target)
-				})
-
-				vl.viper.WatchConfig()
+	vl.viper.WatchConfig()
+	vl.viper.OnConfigChange(func(event fsnotify.Event) {
+		if event.Op == fsnotify.Write {
+			if err := vl.viper.Unmarshal(&target); err != nil {
+				log.Println(err)
 			}
 		}
-	}()
-}
+	})
 
-func (vl *viperLoader) StopLiveReload() {
-	vl.stopWatching <- struct{}{}
+	return nil
 }
 
 func (vl *viperLoader) loadFromFile() error {
@@ -138,10 +122,6 @@ func (vl *viperLoader) loadFromEnv(rv reflect.Value) error {
 	}
 
 	cfgs := readRecursive(deref(rv), "")
-
-	// for _, cfg := range cfgs {
-	// 	vl.viper.SetDefault(cfg.Key, cfg.Default)
-	// }
 
 	vl.viper.SetEnvPrefix(vl.envPrefix)
 	vl.viper.AutomaticEnv()
@@ -234,5 +214,20 @@ func configDecoder(dc *mapstructure.DecoderConfig) {
 		camelCaseEnvVars := strings.ReplaceAll(mapKey, "_", "") == strings.ReplaceAll(fieldName, "_", "")
 
 		return snakeCaseEnvVars || equalFold || camelCaseEnvVars
+	}
+}
+
+func watchEnvVars(ctx context.Context, v *viper.Viper, target any) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := v.Unmarshal(target); err != nil {
+				log.Println(err)
+			}
+		}
+
+		time.Sleep(10 * time.Second)
 	}
 }

@@ -1,6 +1,7 @@
 package configloader_test
 
 import (
+	"context"
 	"os"
 	"reflect"
 	"strings"
@@ -117,7 +118,7 @@ func testLoadFromFileWithConfigNameAndType(t *testing.T) {
 
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -127,7 +128,7 @@ func testLoadFromFileWithConfigNameAndType(t *testing.T) {
 			result = actualConfig
 		} else {
 			actualConfig := AppConfigCamelCase{}
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -194,7 +195,7 @@ func testLoadFromFileWithConfigFile(t *testing.T) {
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -205,7 +206,7 @@ func testLoadFromFileWithConfigFile(t *testing.T) {
 		} else {
 			actualConfig := AppConfigCamelCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -307,7 +308,7 @@ func testLoadFromFileWithConfigFileAndDefaultsEnabled(t *testing.T) {
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -318,7 +319,7 @@ func testLoadFromFileWithConfigFileAndDefaultsEnabled(t *testing.T) {
 		} else {
 			actualConfig := AppConfigCamelCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -382,7 +383,7 @@ func testLoadFromEnv(t *testing.T) {
 
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -392,7 +393,7 @@ func testLoadFromEnv(t *testing.T) {
 			result = actualConfig
 		} else {
 			actualConfig := AppConfigCamelCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -455,7 +456,7 @@ func testLoadFromEnvAndDefaultsEnabled(t *testing.T) {
 
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -465,7 +466,7 @@ func testLoadFromEnvAndDefaultsEnabled(t *testing.T) {
 			result = actualConfig
 		} else {
 			actualConfig := AppConfigCamelCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -541,7 +542,7 @@ func testLoadFromFileWithEnvFile(t *testing.T) {
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -552,7 +553,7 @@ func testLoadFromFileWithEnvFile(t *testing.T) {
 		} else {
 			actualConfig := AppConfigCamelCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -626,7 +627,7 @@ func testLoadFromFileWithEnvFileAndDefaultEnabled(t *testing.T) {
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -637,7 +638,7 @@ func testLoadFromFileWithEnvFileAndDefaultEnabled(t *testing.T) {
 		} else {
 			actualConfig := AppConfigCamelCase{}
 
-			err = loader.Load(&actualConfig)
+			err = loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name()+"/"+scenario, "err", nil, err)
 
@@ -702,7 +703,7 @@ func testLoadFromEnvWithSnakeCaseDisabled(t *testing.T) {
 
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -712,7 +713,7 @@ func testLoadFromEnvWithSnakeCaseDisabled(t *testing.T) {
 			result = actualConfig
 		} else {
 			actualConfig := AppConfigCamelCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -776,7 +777,7 @@ func testLoadFromEnvWithSnakeCaseDisabledAndDefaultsEnabled(t *testing.T) {
 
 		if strings.Contains(scenario, "snake") {
 			actualConfig := AppConfigSnakeCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
@@ -786,7 +787,7 @@ func testLoadFromEnvWithSnakeCaseDisabledAndDefaultsEnabled(t *testing.T) {
 			result = actualConfig
 		} else {
 			actualConfig := AppConfigCamelCase{}
-			err := loader.Load(&actualConfig)
+			err := loader.Load(context.Background(), &actualConfig)
 			if err != nil {
 				errorF(t, t.Name(), "err", nil, err)
 
