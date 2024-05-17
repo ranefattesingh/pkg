@@ -3,7 +3,6 @@ package configloader
 import (
 	"context"
 	"errors"
-	"log"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/mcuadros/go-defaults"
 	"github.com/mitchellh/mapstructure"
+	"github.com/ranefattesingh/pkg/log"
 	"github.com/spf13/viper"
 )
 
@@ -81,7 +81,7 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 	vl.viper.OnConfigChange(func(event fsnotify.Event) {
 		if event.Op == fsnotify.Write {
 			if err := vl.viper.Unmarshal(&target); err != nil {
-				log.Println(err)
+				log.Error("config watcher error during unmarshaling", log.Err(err))
 			}
 		}
 	})
@@ -269,7 +269,7 @@ func watchEnvVars(ctx context.Context, v *viper.Viper, target any) {
 			return
 		default:
 			if err := v.Unmarshal(target); err != nil {
-				log.Println(err)
+				log.Error("config watcher error during unmarshaling", log.Err(err))
 			}
 		}
 
