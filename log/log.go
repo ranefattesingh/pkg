@@ -41,7 +41,10 @@ func newZapLogger(c Config) *zap.Logger {
 		c.Encoder = DefaultJSONEncoder()
 	}
 
-	logLevel, _ := zapcore.ParseLevel(string(c.LogLevel))
+	logLevel, err := zapcore.ParseLevel(string(c.LogLevel))
+	if err != nil {
+		panic("invalid log level")
+	}
 
 	options := []zap.Option{
 		zap.WithCaller(true),
