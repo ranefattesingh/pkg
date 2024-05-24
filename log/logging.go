@@ -1,25 +1,27 @@
 package log
 
-func Info(message string, fields ...Field) {
-	log.zap.Info(message, toZapFields(fields...)...)
+import "go.uber.org/zap/zapcore"
+
+func Info(message string, fields ...zapcore.Field) {
+	log.zap.Info(message, fields...)
 }
 
-func Error(message string, fields ...Field) {
-	log.zap.Error(message, toZapFields(fields...)...)
+func Error(message string, fields ...zapcore.Field) {
+	log.zap.Error(message, fields...)
 }
 
-func Fatal(message string, fields ...Field) {
-	log.zap.Fatal(message, toZapFields(fields...)...)
+func Fatal(message string, fields ...zapcore.Field) {
+	log.zap.Fatal(message, fields...)
 }
 
-func Panic(message string, fields ...Field) {
-	log.zap.Panic(message, toZapFields(fields...)...)
+func Panic(message string, fields ...zapcore.Field) {
+	log.zap.Panic(message, fields...)
 }
 
-func DPanic(message string, fields ...Field) {
-	log.zap.DPanic(message, toZapFields(fields...)...)
+func DPanic(message string, fields ...zapcore.Field) {
+	log.zap.DPanic(message, fields...)
 }
 
-func Debug(message string, fields ...Field) {
-	log.zap.Debug(message, toZapFields(fields...)...)
+func Debug(message string, fields ...zapcore.Field) {
+	log.zap.Debug(message, fields...)
 }
