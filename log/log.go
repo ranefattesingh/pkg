@@ -18,16 +18,17 @@ type Config struct {
 	Output           io.Writer
 	LogLevel         LogLevel
 	Encoder          Encoder
-	StacktraceLevels []LogLevel
 	AdditionalFields map[string]any
 	IsDevelopment    bool
 }
 
 var log *logger
 
-func Init(c Config) *logger {
-	return &logger{
-		zap: newZapLogger(c),
+func Init(c Config) {
+	if log == nil {
+		log = &logger{
+			zap: newZapLogger(c),
+		}
 	}
 }
 
@@ -61,9 +62,7 @@ func newZapLogger(c Config) *zap.Logger {
 	return zapLogger
 }
 
-type stacktraceEnabler struct {
-	StacktraceLevels []zapcore.Level
-}
+type stacktraceEnabler struct{}
 
 func (s stacktraceEnabler) Enabled(level zapcore.Level) bool {
 	switch level {
