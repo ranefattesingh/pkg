@@ -23,9 +23,7 @@ func EncodeResponseJSON(rw http.ResponseWriter, httpStatusCode int, content any)
 	return nil
 }
 
-func EncodeErrorJSON(rw http.ResponseWriter, httpStatusCode int, err error) error {
-	rw.WriteHeader(httpStatusCode)
-
+func EncodeErrorJSON(rw http.ResponseWriter, err error) error {
 	if err != nil {
 		return encode(rw, nil, err)
 	}
