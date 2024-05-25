@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,7 +25,7 @@ func NewHTTPServer(host string, port int, cleanupFns ...func() error) *httpServe
 	}
 }
 
-func (h *httpServer) Start(handler http.Handler) error {
+func (h *httpServer) start(handler http.Handler) error {
 	h.server = &http.Server{
 		Addr:    h.addr,
 		Handler: handler,
@@ -72,10 +73,14 @@ func (h *httpServer) shutdownHTTPServer() error {
 	return nil
 }
 
-func (h *httpServer) WaitForShutdown(cancelFn context.CancelFunc) error {
+func (h *httpServer) Start(handler http.Handler, cancelFn context.CancelFunc) error {
 	errChan := make(chan error, 1)
 
 	go h.shutdown(errChan, cancelFn)
+
+	if err := h.start(handler); errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
 
 	return <-errChan
 }
