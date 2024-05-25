@@ -44,6 +44,8 @@ func encode(w http.ResponseWriter, content any, err error) error {
 			}
 		}
 
+		w.WriteHeader(jErr.HTTPStatusCode)
+
 		success = false
 	}
 
