@@ -8,10 +8,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type logger struct {
-	zap *zap.Logger
-}
-
 type Encoder zapcore.Encoder
 
 type Config struct {
@@ -22,13 +18,11 @@ type Config struct {
 	IsDevelopment    bool
 }
 
-var log *logger
+var log *zap.Logger
 
 func Init(c Config) {
 	if log == nil {
-		log = &logger{
-			zap: newZapLogger(c),
-		}
+		log = newZapLogger(c)
 	}
 }
 
@@ -107,6 +101,6 @@ func DefaultConsoleEncoder() Encoder {
 	})
 }
 
-func Logger() *logger {
+func Logger() *zap.Logger {
 	return log
 }
