@@ -7,21 +7,20 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	"github.com/ranefattesingh/pkg/log"
-	"go.uber.org/zap"
 )
 
 type httpServer struct {
-	addr       string
-	server     *http.Server
-	cleanupFns []func() error
+	addr             string
+	server           *http.Server
+	cleanupFns       []func() error
+	failedCleanupFns []func() error
 }
 
 func NewHTTPServer(host string, port int, cleanupFns ...func() error) *httpServer {
 	return &httpServer{
-		addr:       host + ":" + strconv.Itoa(port),
-		cleanupFns: cleanupFns,
+		addr:             host + ":" + strconv.Itoa(port),
+		cleanupFns:       cleanupFns,
+		failedCleanupFns: make([]func() error, 0),
 	}
 }
 
@@ -31,12 +30,10 @@ func (h *httpServer) Start(handler http.Handler) error {
 		Handler: handler,
 	}
 
-	log.Info("starting server on ", zap.String("addr", h.addr))
-
 	return h.server.ListenAndServe()
 }
 
-func (h *httpServer) Shutdown(shutdown chan<- struct{}, cancelFn context.CancelFunc,
+func (h *httpServer) shutdown(shutdown chan<- error, cancelFn context.CancelFunc,
 ) {
 	defer close(shutdown)
 
@@ -48,29 +45,51 @@ func (h *httpServer) Shutdown(shutdown chan<- struct{}, cancelFn context.CancelF
 
 	cancelFn()
 
-	log.Info("started cleaning up server resources")
-
 	// Server resources cleanup.
 	for _, cleanupFunction := range h.cleanupFns {
 		if err := cleanupFunction(); err != nil {
-			log.Error("resource cleanhup", zap.Error(err))
+			h.failedCleanupFns = append(h.failedCleanupFns, cleanupFunction)
 		}
 	}
 
-	h.shutdownHTTPServer()
+	shutdownErr := h.shutdownHTTPServer()
+
+	retryFailedCleanupFns(shutdown, h.failedCleanupFns)
+
+	shutdown <- shutdownErr
 }
 
-func (h *httpServer) shutdownHTTPServer() {
+func (h *httpServer) shutdownHTTPServer() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	if h.server != nil {
 		if err := h.server.Shutdown(ctx); err != nil {
-			log.Error("server shutdown : %v", zap.Error(err))
-
-			return
+			return err
 		}
+	}
 
-		log.Info("server shutdown complete")
+	return nil
+}
+
+func (h *httpServer) WaitForShutdown(cancelFn context.CancelFunc) error {
+	errChan := make(chan error, 1)
+
+	go h.shutdown(errChan, cancelFn)
+
+	return <-errChan
+}
+
+func retryFailedCleanupFns(shutdown chan<- error, failedCleanupFns []func() error) {
+	// Retry failed cleanup functions
+	errorQ := make([]error, 0)
+	for _, cleanupFunction := range failedCleanupFns {
+		if err := cleanupFunction(); err != nil {
+			errorQ = append(errorQ, err)
+		}
+	}
+
+	for _, err := range errorQ {
+		shutdown <- err
 	}
 }
