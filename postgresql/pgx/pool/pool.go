@@ -2,7 +2,6 @@ package pool
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ranefattesingh/pkg/postgresql"
@@ -15,7 +14,7 @@ type Pool struct {
 func NewDatabaseConnectionPool(ctx context.Context, connectionString string) (*Pool, error) {
 	pool, err := pgxpool.New(ctx, postgresql.EncodeConnectionString(connectionString))
 	if err != nil {
-		return nil, fmt.Errorf("error opening database connection: %w", err)
+		return nil, err
 	}
 
 	return &Pool{pool: pool}, nil

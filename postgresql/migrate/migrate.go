@@ -1,8 +1,6 @@
 package migrate
 
 import (
-	"fmt"
-
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -16,7 +14,7 @@ type PostgresMigrator struct {
 func NewDatabaseMigrator(migrationDir string, connectionString string) (*PostgresMigrator, error) {
 	migrate, err := migrate.New("file://"+migrationDir, postgresql.EncodeConnectionString(connectionString))
 	if err != nil {
-		return nil, fmt.Errorf("migrator initialization error: %w", err)
+		return nil, err
 	}
 
 	return &PostgresMigrator{migrate: migrate}, nil
