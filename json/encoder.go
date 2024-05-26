@@ -3,7 +3,6 @@ package json
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 )
 
@@ -57,7 +56,7 @@ func encode(w http.ResponseWriter, content any, err error) error {
 
 	encodingErr := json.NewEncoder(w).Encode(response)
 	if encodingErr != nil {
-		return fmt.Errorf("encode json: %w", encodingErr)
+		return encodingErr
 	}
 
 	return nil
