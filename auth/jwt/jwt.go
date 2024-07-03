@@ -9,9 +9,10 @@ type JWT struct {
 	secretKey     string
 }
 
-func NewJWT(sm jwt.SigningMethod) *JWT {
+func NewJWT(sm jwt.SigningMethod, sk string) *JWT {
 	return &JWT{
 		signingMethod: sm,
+		secretKey:     sk,
 	}
 }
 
