@@ -79,7 +79,7 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 
 	settings := vl.viper.AllSettings()
 	decoderConfig := &mapstructure.DecoderConfig{
-		DecodeHook: stringToIntHook,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(stringToIntHook, stringToBooleanHook),
 		Metadata:   nil,
 		Result:     target,
 		TagName:    "mapstructure",
@@ -296,6 +296,13 @@ func watchEnvVars(ctx context.Context, v *viper.Viper, target any) {
 func stringToIntHook(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
 	if from == reflect.String && to == reflect.Int {
 		return strconv.Atoi(data.(string))
+	}
+	return data, nil
+}
+
+func stringToBooleanHook(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
+	if from == reflect.String && to == reflect.Bool {
+		return strconv.ParseBool(data.(string))
 	}
 	return data, nil
 }
