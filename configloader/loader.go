@@ -72,7 +72,7 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 		return err
 	}
 
-	if err := vl.viper.Unmarshal(target, configDecoder); err != nil {
+	if err := vl.viper.Unmarshal(target, viper.DecodeHook(configDecoder)); err != nil {
 		return err
 	}
 
