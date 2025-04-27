@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -72,7 +73,25 @@ func (vl *viperLoader) Load(ctx context.Context, target any) (err error) {
 		return err
 	}
 
-	if err := vl.viper.Unmarshal(target, viper.DecodeHook(configDecoder)); err != nil {
+	// if err := vl.viper.Unmarshal(target, viper.DecodeHook(configDecoder)); err != nil {
+	// 	return err
+	// }
+
+	settings := vl.viper.AllSettings()
+	decoderConfig := &mapstructure.DecoderConfig{
+		DecodeHook: stringToIntHook,
+		Metadata:   nil,
+		Result:     target,
+		TagName:    "mapstructure",
+		MatchName:  configDecoder,
+	}
+
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(settings); err != nil {
 		return err
 	}
 
@@ -251,14 +270,12 @@ func convertCamelCaseToSnakeCase(input string) string {
 	return strings.ToLower(sb.String())
 }
 
-func configDecoder(dc *mapstructure.DecoderConfig) {
-	dc.MatchName = func(mapKey, fieldName string) bool {
-		equalFold := strings.EqualFold(mapKey, fieldName)
-		snakeCaseEnvVars := convertCamelCaseToSnakeCase(mapKey) == convertCamelCaseToSnakeCase(fieldName)
-		camelCaseEnvVars := strings.ReplaceAll(mapKey, "_", "") == strings.ReplaceAll(fieldName, "_", "")
+func configDecoder(mapKey, fieldName string) bool {
+	equalFold := strings.EqualFold(mapKey, fieldName)
+	snakeCaseEnvVars := convertCamelCaseToSnakeCase(mapKey) == convertCamelCaseToSnakeCase(fieldName)
+	camelCaseEnvVars := strings.ReplaceAll(mapKey, "_", "") == strings.ReplaceAll(fieldName, "_", "")
 
-		return snakeCaseEnvVars || equalFold || camelCaseEnvVars
-	}
+	return snakeCaseEnvVars || equalFold || camelCaseEnvVars
 }
 
 func watchEnvVars(ctx context.Context, v *viper.Viper, target any) {
@@ -274,4 +291,11 @@ func watchEnvVars(ctx context.Context, v *viper.Viper, target any) {
 
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func stringToIntHook(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
+	if from == reflect.String && to == reflect.Int {
+		return strconv.Atoi(data.(string))
+	}
+	return data, nil
 }
